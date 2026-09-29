@@ -215,8 +215,10 @@ First `npm run gate` failed with Prettier warnings on `src/cart.js` and
 
 1. **Workflow direction**: All four prompts were written by me. The AI did not
    decide what to do — it responded to my instructions.
-2. **Rejection** (CI script): Changed `npm ci || npm install` to `npm install`
-   after identifying it would fail without a pre-existing lock file.
+2. **CI correction (review cycle)**: Initially generated `npm install` for CI.
+   After self-review I identified that `npm ci` is the correct command once
+   `package-lock.json` is committed — it gives deterministic, reproducible
+   builds. Changed in Step 5.
 3. **Manual arithmetic**: Independently computed expected values for tests 3–5
    before reading the AI-generated assertions.
 4. **Lint fix identification**: Identified the Prettier CRLF issue and ran
@@ -225,3 +227,94 @@ First `npm run gate` failed with Prettier warnings on `src/cart.js` and
    were done manually, not by the AI.
 6. **Gate observation**: Ran `npm test` RED before any code was written (per
    the assignment requirement) and confirmed the output manually.
+
+---
+
+## Step 5 — Review cycle (commit after grading)
+
+After running a strict self-review against the rubric, I identified and corrected
+four issues. All changes made by me (not re-prompted to AI).
+
+### Issues found and fixed
+
+**Fix A — CI: `npm install` → `npm ci`** (`.github/workflows/ci.yml`)
+
+`package-lock.json` is committed since Step 1, so `npm ci` is the correct
+command. `npm install` in CI can silently update dependencies between runs,
+making the build non-deterministic. Changed to `npm ci`.
+
+```diff
+-        run: npm install
++        run: npm ci
+```
+
+**Fix B — Validation order** (`src/cart.js`)
+
+`BRIEF.md` (my own spec) says "check every item before summing". The original
+implementation validated AND summed in a single loop — if item N was invalid,
+items 0..N-1 had already been added to `subtotal`. I split into two separate loops:
+first validate all items, then compute subtotal. Observable behaviour is unchanged
+(the function still throws correctly), but the internal contract now matches the spec.
+
+```diff
+-  // Validate all items and compute subtotal
+-  let subtotal = 0
+-  for (const item of items) {
+-    if (item.price < 0) { throw new RangeError(...) }
+-    if (!Number.isInteger(item.qty) || item.qty <= 0) { throw new RangeError(...) }
+-    subtotal += item.price * item.qty
+-  }
++  // Validate all items first (before any summation)
++  for (const item of items) {
++    if (item.price < 0) { throw new RangeError(...) }
++    if (!Number.isInteger(item.qty) || item.qty <= 0) { throw new RangeError(...) }
++  }
++  // Compute subtotal only after all items pass validation
++  let subtotal = 0
++  for (const item of items) {
++    subtotal += item.price * item.qty
++  }
+```
+
+**Fix C — Test 6 atomicity** (`test/cart.test.js`)
+
+Test 6 was checking `typeof result === 'number'` while using `OPTS` (which
+applies shipping and VAT). This means a failure in shipping logic would also
+fail test 6, violating the "one rule, one reason" atomicity requirement. Fixed
+by using neutral options: `{ vatRate: 0, freeShipFrom: 0, shipFee: 0 }`.
+
+**Fix D — `price === 0` boundary test** (`test/cart.test.js`)
+
+The spec says `price < 0` throws. No test verified that `price === 0` (the
+exact boundary) does NOT throw. Added:
+
+```javascript
+test('price of zero is valid and does NOT throw (boundary: price < 0, not <= 0)', () => {
+  const items = [{ name: 'X', price: 0, qty: 1 }]
+  assert.doesNotThrow(() => cartTotal(items, OPTS))
+  assert.equal(typeof cartTotal(items, OPTS), 'number')
+})
+```
+
+### Gate result after all fixes
+
+```
+> npm run gate
+
+> prettier --check .
+All matched files use Prettier code style!
+
+> node --test
+✔ the example from the slides
+✔ empty cart returns 0
+✔ shipping fee applied when subtotal is below freeShipFrom
+✔ free shipping when subtotal exactly equals freeShipFrom
+✔ free shipping when subtotal strictly exceeds freeShipFrom
+✔ cartTotal returns a primitive number (not a string)
+✔ throws RangeError for a negative price
+✔ price of zero is valid and does NOT throw (boundary: price < 0, not <= 0)
+✔ throws RangeError for a non-integer (float) quantity
+✔ throws RangeError for qty of zero
+✔ throws RangeError for a negative quantity
+ℹ tests 11 | pass 11 | fail 0
+```

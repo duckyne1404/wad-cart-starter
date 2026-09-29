@@ -17,8 +17,7 @@ export function cartTotal(items, options = {}) {
 
   const { vatRate = 0, freeShipFrom = 0, shipFee = 0 } = options || {}
 
-  // Validate all items and compute subtotal
-  let subtotal = 0
+  // Validate all items first (before any summation)
   for (const item of items) {
     if (item.price < 0) {
       throw new RangeError(
@@ -30,6 +29,11 @@ export function cartTotal(items, options = {}) {
         `item.qty must be a positive integer, got ${item.qty} (item: "${item.name}")`
       )
     }
+  }
+
+  // Compute subtotal only after all items pass validation
+  let subtotal = 0
+  for (const item of items) {
     subtotal += item.price * item.qty
   }
 

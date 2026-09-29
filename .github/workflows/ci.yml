@@ -21,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install devDependencies
-        run: npm install
+        run: npm ci
 
       - name: Run gate (lint + test)
         run: npm run gate

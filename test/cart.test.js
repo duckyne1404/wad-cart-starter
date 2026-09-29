@@ -63,8 +63,10 @@ test('free shipping when subtotal strictly exceeds freeShipFrom', () => {
 // ---------------------------------------------------------------------------
 
 test('cartTotal returns a primitive number (not a string)', () => {
+  // Neutral options (zero VAT, free shipping always) — only the return TYPE is under test
+  const neutralOpts = { vatRate: 0, freeShipFrom: 0, shipFee: 0 }
   const items = [{ name: 'X', price: 100_000, qty: 1 }]
-  const result = cartTotal(items, OPTS)
+  const result = cartTotal(items, neutralOpts)
   assert.equal(typeof result, 'number')
 })
 
@@ -75,6 +77,13 @@ test('cartTotal returns a primitive number (not a string)', () => {
 test('throws RangeError for a negative price', () => {
   const items = [{ name: 'X', price: -1, qty: 1 }]
   assert.throws(() => cartTotal(items, OPTS), RangeError)
+})
+
+test('price of zero is valid and does NOT throw (boundary: price < 0, not <= 0)', () => {
+  // price === 0 sits exactly on the boundary — must NOT throw, must return a number
+  const items = [{ name: 'X', price: 0, qty: 1 }]
+  assert.doesNotThrow(() => cartTotal(items, OPTS))
+  assert.equal(typeof cartTotal(items, OPTS), 'number')
 })
 
 test('throws RangeError for a non-integer (float) quantity', () => {
