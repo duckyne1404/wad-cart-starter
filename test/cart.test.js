@@ -70,6 +70,14 @@ test('cartTotal returns a primitive number (not a string)', () => {
   assert.equal(typeof result, 'number')
 })
 
+test('result is rounded to the nearest whole dong (Math.round)', () => {
+  // subtotal = 1, vatRate = 0.1 → total = 1 + 0.1 = 1.1 → Math.round(1.1) = 1
+  // Verifies rounding actually occurs (total is not left as a float)
+  const items = [{ name: 'X', price: 1, qty: 1 }]
+  const result = cartTotal(items, { vatRate: 0.1, freeShipFrom: 0, shipFee: 0 })
+  assert.equal(result, 1)
+})
+
 // ---------------------------------------------------------------------------
 // 7–10. RangeError cases
 // ---------------------------------------------------------------------------
@@ -80,10 +88,11 @@ test('throws RangeError for a negative price', () => {
 })
 
 test('price of zero is valid and does NOT throw (boundary: price < 0, not <= 0)', () => {
-  // price === 0 sits exactly on the boundary — must NOT throw, must return a number
+  // price === 0 sits exactly on the boundary — must NOT throw and must return 0
+  // (subtotal=0, VAT=0, shipping charged since 0 < freeShipFrom=500000 → total=30000)
   const items = [{ name: 'X', price: 0, qty: 1 }]
-  assert.doesNotThrow(() => cartTotal(items, OPTS))
-  assert.equal(typeof cartTotal(items, OPTS), 'number')
+  const result = cartTotal(items, OPTS)
+  assert.equal(result, 30_000)
 })
 
 test('throws RangeError for a non-integer (float) quantity', () => {

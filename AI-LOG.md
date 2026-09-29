@@ -1,6 +1,8 @@
 # AI-LOG — IA#1: cartTotal
 
-**Student**: Hoang Duc (duckluvmyself@gmail.com)
+**Student**: Phí Hoàng Đức
+**Student ID**: 24120248
+**Email**: duckluvmyself@gmail.com
 **Course**: CSC13008 — Web Application Development, HK1 2026-2027
 **Date**: 2026-09-29
 **AI Tool**: Google Antigravity IDE — Claude Sonnet 4.6 (Thinking mode)
