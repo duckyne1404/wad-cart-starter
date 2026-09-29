@@ -27,23 +27,23 @@
 
 File: `src/cart.js` (commit `8b9f04d`)
 
-| Sub-rule                          | Evidence in code                                         | Test verifying it                               |
-| --------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| Worked example returns 467400     | `Math.round(405000 + 32400 + 30000)` = 467400            | test 1 "the example from the slides" ✔          |
-| Empty cart returns 0              | `if (!items \|\| items.length === 0) return 0` (line 14) | test 2 "empty cart returns 0" ✔                 |
-| Shipping applied below threshold  | `subtotal >= freeShipFrom ? 0 : shipFee`                 | test 3 "shipping fee applied…" ✔                |
-| Free shipping at exact threshold  | `>=` (inclusive)                                         | test 4 "exactly equals freeShipFrom" ✔          |
-| Free shipping above threshold     | `>=` catches both equal and greater                      | test 5 "strictly exceeds freeShipFrom" ✔        |
-| Return is a number                | `Math.round(...)` returns primitive number               | test 6 "cartTotal returns a primitive number" ✔ |
-| Rounded to whole đồng             | `Math.round(...)` — no `.toFixed()`                      | test 1 (integer result), test 3 (138000) ✔      |
-| Negative price → RangeError       | `if (item.price < 0) throw new RangeError(...)`          | test 7 ✔                                        |
-| `price === 0` is valid (boundary) | Validation uses strict `< 0`, not `<= 0`                 | test 8 "price of zero is valid…" ✔              |
-| Float qty → RangeError            | `!Number.isInteger(item.qty) \|\| item.qty <= 0`         | test 9 ✔                                        |
-| Zero qty → RangeError             | `item.qty <= 0`                                          | test 10 ✔                                       |
-| Negative qty → RangeError         | `item.qty <= 0`                                          | test 11 ✔                                       |
-| Validation BEFORE summation       | Two separate loops: validate all → then sum              | confirmed by code structure (Step 5 fix)        |
+| Sub-rule                          | Evidence in code                                         | Test verifying it                                      |
+| --------------------------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| Worked example returns 467400     | `Math.round(405000 + 32400 + 30000)` = 467400            | test 1 "the example from the slides" ✔                 |
+| Empty cart returns 0              | `if (!items \|\| items.length === 0) return 0` (line 14) | test 2 "empty cart returns 0" ✔                        |
+| Shipping applied below threshold  | `subtotal >= freeShipFrom ? 0 : shipFee`                 | test 3 "shipping fee applied…" ✔                       |
+| Free shipping at exact threshold  | `>=` (inclusive)                                         | test 4 "exactly equals freeShipFrom" ✔                 |
+| Free shipping above threshold     | `>=` catches both equal and greater                      | test 5 "strictly exceeds freeShipFrom" ✔               |
+| Return is a number                | `Math.round(...)` returns primitive number               | test 6 "cartTotal returns a primitive number" ✔        |
+| Rounded to whole đồng             | `Math.round(108.5) = 109` (not `Math.floor`)             | test 7 "result is rounded to the nearest whole dong" ✔ |
+| Negative price → RangeError       | `if (item.price < 0) throw new RangeError(...)`          | test 8 "throws RangeError for a negative price" ✔      |
+| `price === 0` is valid (boundary) | Validation uses strict `< 0`, not `<= 0`                 | test 9 "price of zero is valid…" ✔                     |
+| Float qty → RangeError            | `!Number.isInteger(item.qty) \|\| item.qty <= 0`         | test 10 "throws RangeError for a non-integer…" ✔       |
+| Zero qty → RangeError             | `item.qty <= 0`                                          | test 11 "throws RangeError for qty of zero" ✔          |
+| Negative qty → RangeError         | `item.qty <= 0`                                          | test 12 "throws RangeError for a negative quantity" ✔  |
+| Validation BEFORE summation       | Two separate loops: validate all → then sum              | confirmed by code structure (Step 5 fix)               |
 
-All 11 tests pass (`npm test`: 11 pass, 0 fail).
+All 12 tests pass (`npm test`: 12 pass, 0 fail).
 
 ---
 
@@ -51,17 +51,18 @@ All 11 tests pass (`npm test`: 11 pass, 0 fail).
 
 File: `test/cart.test.js` (commit `8b9f04d`)
 
-- **`npm test` is GREEN**: 11/11 tests pass, 0 failures.
+- **`npm test` is GREEN**: 12/12 tests pass, 0 failures.
 - **Uses native runner**: `node:test` and `node:assert/strict` only — no Mocha/Jest/Chai.
-- **Atomic tests**: each test has a single `assert.*` or `assert.throws`/`doesNotThrow`
-  call targeting exactly one rule; if that rule breaks, only that test fails. Test 6
-  uses neutral options `{vatRate:0, freeShipFrom:0, shipFee:0}` so only the return
-  type is exercised, not shipping or VAT logic.
+- **Atomic tests**: each test has exactly one `assert.*` call targeting one rule; a
+  failure pinpoints exactly which rule broke. Test 6 uses neutral options so only the
+  return type is exercised; test 7 uses `108.5 → 109` to prove `Math.round` (not
+  `Math.floor` or `parseInt`) is used.
 - **Coverage**:
   - Worked example (happy path with both shipping and VAT)
   - Empty cart edge case
   - Shipping threshold: 3 boundary tests (below, equal, above)
-  - Return type guard (with neutral options — truly atomic)
+  - Return type guard (neutral options — truly atomic)
+  - Fractional rounding: `Math.round(108.5) = 109` fails under `Math.floor`
   - `price === 0` boundary: confirms `< 0` (not `<= 0`) is the throw condition
   - All 4 `RangeError` cases: negative price, float qty, zero qty, negative qty
 
@@ -161,4 +162,4 @@ Step 5 for full diffs):
 | Test 6 not truly atomic (used `OPTS` with VAT/shipping) | `test/cart.test.js` | Changed to neutral `{vatRate:0, freeShipFrom:0, shipFee:0}` |
 | No boundary test for `price === 0`                      | `test/cart.test.js` | Added `doesNotThrow` test for `price: 0`                    |
 
-Final state: `npm run gate` GREEN, 11/11 tests, lint clean.
+Final state: `npm run gate` GREEN, 12/12 tests, lint clean.

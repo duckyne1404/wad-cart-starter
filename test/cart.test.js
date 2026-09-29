@@ -71,15 +71,16 @@ test('cartTotal returns a primitive number (not a string)', () => {
 })
 
 test('result is rounded to the nearest whole dong (Math.round)', () => {
-  // subtotal = 1, vatRate = 0.1 → total = 1 + 0.1 = 1.1 → Math.round(1.1) = 1
-  // Verifies rounding actually occurs (total is not left as a float)
-  const items = [{ name: 'X', price: 1, qty: 1 }]
-  const result = cartTotal(items, { vatRate: 0.1, freeShipFrom: 0, shipFee: 0 })
-  assert.equal(result, 1)
+  // subtotal = 100, vatRate = 0.085 → total = 100 + 8.5 = 108.5
+  // Math.round(108.5) = 109 (rounds half-up)
+  // Math.floor(108.5) = 108 → would FAIL this test, proving Math.round is used
+  const items = [{ name: 'X', price: 100, qty: 1 }]
+  const result = cartTotal(items, { vatRate: 0.085, freeShipFrom: 0, shipFee: 0 })
+  assert.equal(result, 109)
 })
 
 // ---------------------------------------------------------------------------
-// 7–10. RangeError cases
+// 8–12. RangeError cases & boundary
 // ---------------------------------------------------------------------------
 
 test('throws RangeError for a negative price', () => {
